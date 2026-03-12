@@ -1,0 +1,58 @@
+cd C:\Users\Prasanna\Desktop\pathScience\code\frozen\clustering
+
+conda activate ml
+
+# Google Path-Foundation
+
+python embeddings_pipeline/embedding_extractor.py --img_path "data/gi-registration" --preprocessing_fcn resize --output "data/global_embedding.parquet" --s3_path None --batch_size 128 --save_every_n_batches 10 --num_loader_workers 4 --modality stained
+
+python run_model_pipeline.py --model path_foundation --k 16 --pca 100
+
+python find_optimal_k_advanced.py --parquet data/global_embedding.parquet --silhouette --pca 100
+python -m clustering_pipeline.cli build-db --embed-parquet data/global_embedding.parquet
+python -m clustering_pipeline.cli train --table-name embeddings --k 16
+python -m clustering_pipeline.cli predict --k 16 --model-path ./models/kmeans_model_k16__above_all.joblib
+python -m clustering_pipeline.cli postprocess
+python -m clustering_pipeline.cli analyze --k 16
+python projection_plot.py --method umap --pca-components 100
+
+# UNI
+
+python embeddings_pipeline/embedding_extractor.py --model uni --img_path "data/gi-registration" --output data/global_embedding_uni.parquet --batch_size 128 --modality stained
+
+python run_model_pipeline.py --model uni --k 16 --pca 100
+
+python find_optimal_k_advanced.py --parquet data/global_embedding.parquet --silhouette --pca 100
+python -m clustering_pipeline.cli build-db --embed-parquet data/global_embedding.parquet
+python -m clustering_pipeline.cli train --table-name embeddings --k 16
+python -m clustering_pipeline.cli predict --k 16 --model-path ./models/kmeans_model_k16__above_all.joblib
+python -m clustering_pipeline.cli postprocess
+python -m clustering_pipeline.cli analyze --k 16
+python projection_plot.py --method umap --pca-components 100
+
+## UNI2
+python embeddings_pipeline/embedding_extractor.py --model uni2 --img_path "data/gi-registration" --output data/global_embedding_uni2.parquet --batch_size 64 --modality stained
+
+python run_model_pipeline.py --model uni2 --k 16 --pca 100
+
+## CONCH
+python embeddings_pipeline/embedding_extractor.py --model conch --img_path "data/gi-registration" --output data/global_embedding_conch.parquet --batch_size 128 --modality stained
+
+## TITAN (CONCH 1.5)
+python embeddings_pipeline/embedding_extractor.py --model titan --img_path "data/gi-registration" --output data/global_embedding_titan.parquet --batch_size 128 --modality stained
+
+python run_model_pipeline.py --model titan --k 16 --pca 100
+
+## 03/09/2026
+python run_model_pipeline.py --model path_foundation --k 48 --min-tissue-pct 20 --pca 100
+python run_model_pipeline.py --model uni --k 48 --min-tissue-pct 20 --pca 100
+python run_model_pipeline.py --model uni2 --k 48 --min-tissue-pct 20 --pca 100
+python run_model_pipeline.py --model titan --k 48 --min-tissue-pct 20 --pca 100
+python compare_models_optimal_k.py
+
+python find_optimal_k_advanced.py --parquet data/global_embedding_path_foundation.parquet --silhouette --output-dir results/path_foundation --pca 100
+python find_optimal_k_advanced.py --parquet data/global_embedding_uni.parquet --silhouette --output-dir results/uni --pca 100
+python find_optimal_k_advanced.py --parquet data/global_embedding_uni2.parquet --silhouette --output-dir results/uni2 --pca 100
+python find_optimal_k_advanced.py --parquet data/global_embedding_titan.parquet --silhouette --output-dir results/titan --pca 100
+python compare_models_optimal_k.py
+
